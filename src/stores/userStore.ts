@@ -9,21 +9,28 @@ export const useUserStore = defineStore("user", () => {
   const level = ref<number>(0);
   const lastError = ref<string | null>(null);
 
-  const handleLogin = async (username: string, password: string) => {
+  const handleLogin = async (usernameInput: string, passwordInput: string) => {
+    lastError.value = null;
     try {
       const res: any = await instance.post("/user/login", {
-        username,
-        password,
+        username: usernameInput,
+        password: passwordInput,
       });
-      console.log(res);
+      // console.log(res);
       ElMessage.success("登录成功");
       isLoggedIn.value = true;
-      if (res && res.Level) {
-        level.value = res.Level;
-      }
+      username.value = usernameInput; // 更新用户名
+
+      // 后端一定会返回 Level 或 level，且值为 1 (医生) 或 2 (管理员)
+      level.value = res.Level ?? res.level;
     } catch (err: any) {
-      lastError.value = String(err) || "登录失败，请稍后重试";
-      ElMessage.error(lastError.value);
+      isLoggedIn.value = false;
+      level.value = 0;
+      username.value = "";
+      lastError.value =
+        typeof err === "string" ? err : err.message || "登录失败，请稍后重试";
+      ElMessage.error(lastError.value || "登录失败");
+      throw err; // 抛出错误以便组件处理
     }
   };
 
@@ -31,8 +38,12 @@ export const useUserStore = defineStore("user", () => {
     lastError.value = null;
     try {
       await instance.put("/user/update", { newPassword });
+      ElMessage.success("密码修改成功");
       return true;
-    } catch (error) {
+    } catch (error: any) {
+      lastError.value =
+        typeof error === "string" ? error : error.message || "密码修改失败";
+      ElMessage.error(lastError.value || "密码修改失败");
       return false;
     }
   };
@@ -40,11 +51,17 @@ export const useUserStore = defineStore("user", () => {
   const fetchCurrentUser = async () => {
     lastError.value = null;
     try {
-      const res = (await instance.get("/user/status")) as any;
+      const res: any = await instance.get("/user/status");
       username.value = res.username || "";
       isLoggedIn.value = true;
-    } catch (error) {
-      lastError.value = String(error);
+      // 恢复用户等级，防止刷新页面后权限丢失
+      level.value = res.Level ?? res.level;
+    } catch (error: any) {
+      isLoggedIn.value = false;
+      username.value = "";
+      level.value = 0;
+      lastError.value =
+        typeof error === "string" ? error : error.message || "获取用户信息失败";
     }
   };
 
@@ -52,12 +69,17 @@ export const useUserStore = defineStore("user", () => {
     lastError.value = null;
     try {
       await instance.delete("/user/logout");
-      isLoggedIn.value = false;
       ElMessage.success("登出成功");
-    } catch (error) {
-      lastError.value = String(error);
-      ElMessage.error("登出失败，请稍后重试");
-    } 
+    } catch (error: any) {
+      lastError.value =
+        typeof error === "string" ? error : error.message || "登出失败";
+      ElMessage.error(lastError.value || "登出失败");
+    } finally {
+      // 无论后端是否成功，前端都清理状态
+      isLoggedIn.value = false;
+      username.value = "";
+      level.value = 0;
+    }
   };
 
   return {

@@ -1,0 +1,19 @@
+:root {
+  --el-color-primary: #26a69a;
+  --el-color-primary-light-3: #5dc3ba; /* Lightened approx 20% */
+  --el-color-primary-light-5: #85d5ce; /* Lightened approx 40% */
+  --el-color-primary-light-7: #aee7e2; /* Lightened approx 60% */
+  --el-color-primary-light-8: #cbf2ef; /* Lightened approx 70% */
+  --el-color-primary-light-9: #e6f9f8; /* Lightened approx 80-90% */
+  --el-color-primary-dark-2: #1e857b; /* Darkened approx 20% */
+}
+
+/* 覆盖菜单选中颜色 */
+.el-menu-item.is-active {
+  color: var(--el-color-primary);
+}
+
+/* 全局按钮圆角风格统一 */
+.el-button {
+  border-radius: 4px;
+}

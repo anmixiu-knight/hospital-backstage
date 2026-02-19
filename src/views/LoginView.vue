@@ -120,10 +120,13 @@ const handleLogin = async () => {
       loginForm.value.username,
       loginForm.value.password,
     );
-    if (userStore.level === 2) {
-      router.push("/super-admin");
-    } else {
-      router.push("/");
+
+    if (userStore.isLoggedIn) {
+      if (userStore.level === 2) {
+        router.push("/super-admin");
+      } else {
+        router.push("/");
+      }
     }
   } else {
     ElMessage.warning("请输入用户名和密码");

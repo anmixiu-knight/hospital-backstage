@@ -3,10 +3,12 @@
     <el-card>
       <template #header>
         <div class="card-header">
-          <span>超级管理员控制台</span>
-          <el-button type="primary" @click="showRegisterDialog = true"
-            >注册新医生</el-button
-          >
+          <span>医生信息管理</span>
+          <div class="button-group">
+            <el-button type="primary" @click="showRegisterDialog = true"
+              >注册新医生</el-button
+            >
+          </div>
         </div>
       </template>
 
@@ -71,7 +73,9 @@
 
 <script setup lang="ts">
 import { ref, onMounted, reactive } from "vue";
+import { useRouter } from "vue-router";
 import instance from "@/composable/api/interface";
+import { useUserStore } from "@/stores/userStore";
 import { ElMessage } from "element-plus";
 
 const doctorList = ref([]);
@@ -80,6 +84,8 @@ const total = ref(0);
 const page = ref(1);
 const limit = ref(10);
 const showRegisterDialog = ref(false);
+const router = useRouter();
+const userStore = useUserStore();
 
 const registerForm = reactive({
   username: "",
@@ -145,6 +151,11 @@ const handleResetPassword = async (id: string) => {
   }
 };
 
+const handleLogout = () => {
+  router.push("/login");
+  userStore.logout();
+};
+
 onMounted(() => {
   fetchDoctors();
 });
@@ -152,12 +163,16 @@ onMounted(() => {
 
 <style scoped>
 .admin-container {
-  padding: 20px;
+  /* padding: 20px; */ /* Padding is handled by MainLayout */
 }
 .card-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
+}
+.button-group {
+  display: flex;
+  gap: 10px;
 }
 .pagination-container {
   margin-top: 15px;
