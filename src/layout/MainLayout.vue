@@ -136,9 +136,12 @@ const validatePass2 = (rule: any, value: any, callback: any) => {
 const passwordRules = reactive<FormRules>({
   newPassword: [
     { required: true, message: "请输入新密码", trigger: "blur" },
-    { min: 6, max: 20, message: "长度在 6 到 20 个字符", trigger: "blur" },
+    { min: 3, max: 12, message: "长度在 3 到 12 个字符", trigger: "blur" },
   ],
-  confirmPassword: [{ validator: validatePass2, trigger: "blur" }],
+  confirmPassword: [
+    { required: true, message: "请再次输入密码", trigger: "blur" },
+    { validator: validatePass2, trigger: "blur" },
+  ],
 });
 
 const currentRouteName = computed(() => {

@@ -55,6 +55,7 @@
             v-model="registerForm.password"
             type="password"
             placeholder="请输入密码"
+            show-password
           />
         </el-form-item>
         <el-form-item label="电话">

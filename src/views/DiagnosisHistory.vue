@@ -346,7 +346,7 @@
     <el-dialog
       v-model="editMalignantDialogVisible"
       title="修改是否恶性"
-      width="300px"
+      width="400px"
       align-center
     >
       <div style="text-align: center">
