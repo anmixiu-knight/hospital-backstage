@@ -96,15 +96,59 @@
         </div>
       </div>
     </div>
+
+    <!-- Password Change Dialog -->
+    <el-dialog
+      v-model="showChangePasswordDialog"
+      title="修改初始密码"
+      width="400px"
+      :close-on-click-modal="false"
+      :close-on-press-escape="false"
+      :show-close="false"
+      center
+    >
+      <div style="text-align: center; margin-bottom: 20px; color: #e6a23c">
+        <el-icon :size="20" style="vertical-align: middle; margin-right: 5px">
+          <Warning />
+        </el-icon>
+        <span>为了您的账号安全，请修改初始密码</span>
+      </div>
+
+      <el-form :model="passwordForm" label-width="80px">
+        <el-form-item label="新密码">
+          <el-input
+            v-model="passwordForm.newPassword"
+            type="password"
+            placeholder="请输入新密码"
+            show-password
+          />
+        </el-form-item>
+        <el-form-item label="确认密码">
+          <el-input
+            v-model="passwordForm.confirmPassword"
+            type="password"
+            placeholder="请再次输入新密码"
+            show-password
+          />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <div class="dialog-footer">
+          <el-button type="primary" @click="handleChangePassword">
+            确认修改
+          </el-button>
+        </div>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref } from "vue";
+import { ref, reactive } from "vue";
 import { useRouter } from "vue-router";
 import { ElMessage } from "element-plus";
-import { User, Lock, FirstAidKit } from "@element-plus/icons-vue";
-import { useUserStore } from "../stores/userStore";
+import { User, Lock, FirstAidKit, Warning } from "@element-plus/icons-vue";
+import { useUserStore } from "@/stores/userStore";
 
 const router = useRouter();
 const userStore = useUserStore();
@@ -114,14 +158,30 @@ const loginForm = ref({
   password: "",
 });
 
+const showChangePasswordDialog = ref(false);
+const passwordForm = reactive({
+  newPassword: "",
+  confirmPassword: "",
+});
+
 const handleLogin = async () => {
   if (loginForm.value.username && loginForm.value.password) {
-    await userStore.handleLogin(
-      loginForm.value.username,
-      loginForm.value.password,
-    );
+    try {
+      await userStore.handleLogin(
+        loginForm.value.username,
+        loginForm.value.password,
+      );
+    } catch (error) {
+      return;
+    }
 
     if (userStore.isLoggedIn) {
+      if (loginForm.value.password === "123456") {
+        ElMessage.warning("您的密码过于简单，请立即修改密码");
+        showChangePasswordDialog.value = true;
+        return;
+      }
+
       if (userStore.level === 2) {
         router.push("/super-admin");
       } else {
@@ -132,9 +192,41 @@ const handleLogin = async () => {
     ElMessage.warning("请输入用户名和密码");
   }
 };
+
+const handleChangePassword = async () => {
+  if (!passwordForm.newPassword) {
+    ElMessage.warning("请输入新密码");
+    return;
+  }
+  if (passwordForm.newPassword === "123456") {
+    ElMessage.warning("新密码不能与初始密码相同");
+    return;
+  }
+  if (passwordForm.newPassword !== passwordForm.confirmPassword) {
+    ElMessage.warning("两次输入的密码不一致");
+    return;
+  }
+
+  const success = await userStore.updatePassword(passwordForm.newPassword);
+  if (success) {
+    showChangePasswordDialog.value = false;
+    ElMessage.success("密码修改成功，正在跳转...");
+
+    // Proceed to redirect logic
+    if (userStore.level === 2) {
+      router.push("/super-admin");
+    } else {
+      router.push("/");
+    }
+  }
+};
 </script>
 
 <style scoped>
+.dialog-footer {
+  text-align: right;
+}
+
 .login-container {
   height: 100vh;
   width: 100vw;
