@@ -115,6 +115,14 @@
       </div>
 
       <el-form :model="passwordForm" label-width="80px">
+        <el-form-item label="旧密码">
+          <el-input
+            v-model="passwordForm.oldPassword"
+            type="password"
+            placeholder="请输入旧密码"
+            show-password
+          />
+        </el-form-item>
         <el-form-item label="新密码">
           <el-input
             v-model="passwordForm.newPassword"
@@ -160,6 +168,7 @@ const loginForm = ref({
 
 const showChangePasswordDialog = ref(false);
 const passwordForm = reactive({
+  oldPassword: "",
   newPassword: "",
   confirmPassword: "",
 });
@@ -176,8 +185,8 @@ const handleLogin = async () => {
     }
 
     if (userStore.isLoggedIn) {
-      if (loginForm.value.password === "123456") {
-        ElMessage.warning("您的密码过于简单，请立即修改密码");
+      if (userStore.reset === 1) {
+        ElMessage.warning("为了您的账号安全，请修改初始密码");
         showChangePasswordDialog.value = true;
         return;
       }
@@ -194,12 +203,16 @@ const handleLogin = async () => {
 };
 
 const handleChangePassword = async () => {
+  if (!passwordForm.oldPassword) {
+    ElMessage.warning("请输入旧密码");
+    return;
+  }
   if (!passwordForm.newPassword) {
     ElMessage.warning("请输入新密码");
     return;
   }
-  if (passwordForm.newPassword === "123456") {
-    ElMessage.warning("新密码不能与初始密码相同");
+  if (passwordForm.newPassword === passwordForm.oldPassword) {
+    ElMessage.warning("新密码不能与旧密码相同");
     return;
   }
   if (passwordForm.newPassword !== passwordForm.confirmPassword) {
@@ -207,12 +220,14 @@ const handleChangePassword = async () => {
     return;
   }
 
-  const success = await userStore.updatePassword(passwordForm.newPassword);
+  const success = await userStore.updatePassword(
+    passwordForm.oldPassword,
+    passwordForm.newPassword,
+  );
   if (success) {
     showChangePasswordDialog.value = false;
     ElMessage.success("密码修改成功，正在跳转...");
 
-    // Proceed to redirect logic
     if (userStore.level === 2) {
       router.push("/super-admin");
     } else {

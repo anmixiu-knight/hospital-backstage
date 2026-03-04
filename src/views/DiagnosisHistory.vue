@@ -36,10 +36,10 @@
             </el-form-item>
           </el-col>
           <el-col :span="6" :xs="24" :sm="12" :md="8" :lg="6">
-            <el-form-item label="医生ID">
+            <el-form-item label="医生姓名">
               <el-input
-                v-model="queryParams.doctorId"
-                placeholder="请输入医生ID"
+                v-model="queryParams.doctorName"
+                placeholder="请输入医生姓名"
                 clearable
                 @keyup.enter="handleSearch"
               />
@@ -296,7 +296,11 @@
             </div>
           </template>
         </el-table-column>
-        <el-table-column prop="advice" label="AI医嘱" show-overflow-tooltip />
+        <el-table-column label="AI医嘱" show-overflow-tooltip>
+          <template #default="scope">
+            {{ getAdviceLabel(scope.row.advice) }}
+          </template>
+        </el-table-column>
         <el-table-column label="备注" min-width="180">
           <template #default="scope">
             <div class="comment-cell">
@@ -567,6 +571,7 @@ const queryParams = reactive({
   page: 1,
   limit: 10,
   doctorId: "",
+  doctorName: "",
   clinicNumber: "",
   age_min: undefined,
   age_max: undefined,
@@ -732,6 +737,23 @@ const getBaseTypeLabel = (baseType: any) => {
   return typeMap[String(baseType)];
 };
 
+const getAdviceLabel = (advice: string | undefined) => {
+  if (!advice) return "-";
+  // normalize whitespace and newlines to match stored templates
+  const normalized = advice.replace(/\s+/g, " ").trim();
+  const map: Record<string, string> = {
+    "Follow-up is not required": "无需随访",
+    "Follow-up ultrasound is recommended at 6 months, 1 year, and 2 years; Follow-up should be discontinued after 2 years in the absence of growth.":
+      "建议于6个月、1年及2年进行超声随访；若2年内病灶无增大，应停止随访。",
+    "Cholecystectomy is recommended if the patient is fit for, and accepts, surgery;\n MDT discussion may be considered":
+      "若患者具备手术指征且可耐受手术，建议行胆囊切除术；可考虑进行多学科团队MDT讨论。",
+    "Cholecystectomy is strongly recommended if the patient is fit for, and accepts, surgery":
+    "若患者具备手术指征且可耐受手术，强烈建议行胆囊切除术。"
+  };
+
+  return map[normalized] || advice;
+};
+
 const formatDate = (dateValue: any) => {
   if (!dateValue) return "-";
   const date = new Date(dateValue);
@@ -805,7 +827,7 @@ const handleExport = async () => {
       d.probability,
       d.risk_level,
       getMalignantInfo(d.is_worse).label,
-      d.advice || "",
+      getAdviceLabel(d.advice || ""),
       d.comment || "",
       formatDate(d.formTime),
     ]);

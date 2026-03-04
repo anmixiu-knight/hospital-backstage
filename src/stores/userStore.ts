@@ -7,6 +7,7 @@ export const useUserStore = defineStore("user", () => {
   const username = ref<string>("");
   const isLoggedIn = ref(false);
   const level = ref<number>(0);
+  const reset = ref<number>(0);
   const lastError = ref<string | null>(null);
 
   const handleLogin = async (usernameInput: string, passwordInput: string) => {
@@ -23,6 +24,7 @@ export const useUserStore = defineStore("user", () => {
 
       // 后端一定会返回 Level 或 level，且值为 1 (医生) 或 2 (管理员)
       level.value = res.Level ?? res.level;
+      reset.value = res.reset ?? 0;
     } catch (err: any) {
       isLoggedIn.value = false;
       level.value = 0;
@@ -34,10 +36,10 @@ export const useUserStore = defineStore("user", () => {
     }
   };
 
-  const updatePassword = async (newPassword: string) => {
+  const updatePassword = async (oldPassword: string, newPassword: string) => {
     lastError.value = null;
     try {
-      await instance.put("/user/update", { newPassword });
+      await instance.put("/user/update", { oldPassword, newPassword });
       ElMessage.success("密码修改成功");
       return true;
     } catch (error: any) {
@@ -79,6 +81,7 @@ export const useUserStore = defineStore("user", () => {
       isLoggedIn.value = false;
       username.value = "";
       level.value = 0;
+      reset.value = 0;
     }
   };
 
@@ -86,6 +89,7 @@ export const useUserStore = defineStore("user", () => {
     username,
     isLoggedIn,
     level,
+    reset,
     lastError,
     handleLogin,
     updatePassword,

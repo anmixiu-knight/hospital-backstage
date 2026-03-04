@@ -16,7 +16,41 @@
         <el-table-column prop="id" label="ID" width="100" />
         <el-table-column prop="username" label="医生用户名" />
         <el-table-column prop="phone" label="电话号码" />
-        <el-table-column label="操作" width="200">
+        <el-table-column label="修改权限" width="220">
+          <template #default="scope">
+            <el-popconfirm
+              v-if="!scope.row.isUpgradeMode"
+              title="确定删除该医生吗?"
+              @confirm="handleDeleteDoctor(scope.row.id)"
+            >
+              <template #reference>
+                <el-button size="small" type="danger" :icon="Delete"
+                  >删除</el-button
+                >
+              </template>
+            </el-popconfirm>
+            <el-popconfirm
+              v-else
+              title="确定将该医生设为管理员吗?"
+              @confirm="handleUpgradeDoctor(scope.row.id)"
+            >
+              <template #reference>
+                <el-button size="small" type="success" :icon="User"
+                  >设为管理员</el-button
+                >
+              </template>
+            </el-popconfirm>
+            <el-button
+              link
+              size="small"
+              :icon="Refresh"
+              @click="toggleMode(scope.row)"
+              style="margin-left: 8px"
+              title="切换模式"
+            />
+          </template>
+        </el-table-column>
+        <el-table-column label="操作" width="150">
           <template #default="scope">
             <el-popconfirm
               title="确定重置该医生的密码吗?"
@@ -69,6 +103,49 @@
         </span>
       </template>
     </el-dialog>
+
+    <!-- Reset Password Success Dialog -->
+    <el-dialog
+      v-model="showResetSuccessDialog"
+      title="重置密码成功"
+      width="400px"
+      center
+    >
+      <div style="text-align: center; font-size: 16px">
+        <p>新密码为：</p>
+        <div
+          style="
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            margin: 15px 0;
+            background: #f5f7fa;
+            padding: 10px;
+            border-radius: 4px;
+          "
+        >
+          <strong
+            style="color: #f56c6c; font-size: 20px; font-family: monospace"
+            >{{ resetNewPassword }}</strong
+          >
+          <el-button
+            type="primary"
+            link
+            :icon="CopyDocument"
+            @click="copyPassword"
+          />
+        </div>
+        <p style="color: #909399; font-size: 14px">请妥善保管并告知医生。</p>
+      </div>
+      <template #footer>
+        <span class="dialog-footer">
+          <el-button type="primary" @click="showResetSuccessDialog = false"
+            >确定</el-button
+          >
+        </span>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
@@ -77,7 +154,15 @@ import { ref, onMounted, reactive } from "vue";
 import { useRouter } from "vue-router";
 import instance from "@/composable/api/interface";
 import { useUserStore } from "@/stores/userStore";
-import { ElMessage } from "element-plus";
+import { ElMessage, ElMessageBox } from "element-plus";
+import {
+  Delete,
+  User,
+  Refresh,
+  Sort,
+  CopyDocument,
+} from "@element-plus/icons-vue";
+import { useClipboard } from "@vueuse/core"; // If vueuse is available, otherwise use navigator
 
 const doctorList = ref([]);
 const loading = ref(false);
@@ -85,6 +170,8 @@ const total = ref(0);
 const page = ref(1);
 const limit = ref(10);
 const showRegisterDialog = ref(false);
+const showResetSuccessDialog = ref(false);
+const resetNewPassword = ref("");
 const router = useRouter();
 const userStore = useUserStore();
 
@@ -106,7 +193,10 @@ const fetchDoctors = async () => {
     console.log(res);
     // Adapt to response structure
     if (res && res.doctors) {
-      doctorList.value = res.doctors;
+      doctorList.value = res.doctors.map((d: any) => ({
+        ...d,
+        isUpgradeMode: false, // Start in Delete mode
+      }));
       total.value = res.total || res.doctors.length;
     } else {
       doctorList.value = [];
@@ -145,11 +235,54 @@ const handleRegister = async () => {
 
 const handleResetPassword = async (id: string) => {
   try {
-    await instance.put(`/admin/doctor/reset/${id}`);
-    ElMessage.success("密码重置成功");
+    const res: any = await instance.put(`/admin/doctor/reset/${id}`);
+    // 尝试提取密码，兼容直接返回字符串或对象包含 password 字段的情况
+    let newPassword = "";
+    if (res && res.newPassword) {
+      newPassword = res.newPassword;
+      resetNewPassword.value = newPassword;
+      showResetSuccessDialog.value = true;
+    } else {
+      newPassword = JSON.stringify(res);
+      resetNewPassword.value = newPassword;
+      showResetSuccessDialog.value = true;
+    }
   } catch (error: any) {
     ElMessage.error(error.message || "重置密码失败");
   }
+};
+
+const copyPassword = async () => {
+  try {
+    await navigator.clipboard.writeText(resetNewPassword.value);
+    ElMessage.success("密码已复制到剪贴板");
+  } catch (err) {
+    ElMessage.error("复制失败，请手动复制");
+  }
+};
+
+const handleDeleteDoctor = async (id: string) => {
+  try {
+    await instance.delete(`/admin/doctor/delete/${id}`);
+    ElMessage.success("删除成功");
+    fetchDoctors();
+  } catch (error: any) {
+    ElMessage.error(error.message || "删除失败");
+  }
+};
+
+const handleUpgradeDoctor = async (id: string) => {
+  try {
+    await instance.put(`/admin/doctor/upgrade/${id}`);
+    ElMessage.success("设置管理员成功");
+    fetchDoctors();
+  } catch (error: any) {
+    ElMessage.error(error.message || "设置失败");
+  }
+};
+
+const toggleMode = (row: any) => {
+  row.isUpgradeMode = !row.isUpgradeMode;
 };
 
 const handleLogout = () => {

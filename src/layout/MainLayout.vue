@@ -53,7 +53,11 @@
         </div>
       </el-header>
       <el-main class="main-content">
-        <router-view />
+        <router-view v-slot="{ Component }">
+          <keep-alive>
+            <component :is="Component" />
+          </keep-alive>
+        </router-view>
       </el-main>
     </el-container>
 
@@ -65,6 +69,14 @@
         :rules="passwordRules"
         label-width="100px"
       >
+        <el-form-item label="旧密码" prop="oldPassword">
+          <el-input
+            v-model="passwordForm.oldPassword"
+            type="password"
+            show-password
+            placeholder="请输入旧密码"
+          />
+        </el-form-item>
         <el-form-item label="新密码" prop="newPassword">
           <el-input
             v-model="passwordForm.newPassword"
@@ -119,6 +131,7 @@ const loading = ref(false);
 const passwordFormRef = ref<FormInstance>();
 
 const passwordForm = reactive({
+  oldPassword: "",
   newPassword: "",
   confirmPassword: "",
 });
@@ -134,6 +147,7 @@ const validatePass2 = (rule: any, value: any, callback: any) => {
 };
 
 const passwordRules = reactive<FormRules>({
+  oldPassword: [{ required: true, message: "请输入旧密码", trigger: "blur" }],
   newPassword: [
     { required: true, message: "请输入新密码", trigger: "blur" },
     { min: 3, max: 12, message: "长度在 3 到 12 个字符", trigger: "blur" },
@@ -161,6 +175,7 @@ const handleCommand = (command: string) => {
     router.push("/login");
   } else if (command === "changePassword") {
     showPasswordDialog.value = true;
+    passwordForm.oldPassword = "";
     passwordForm.newPassword = "";
     passwordForm.confirmPassword = "";
   }
@@ -172,7 +187,10 @@ const submitPasswordChange = async () => {
     if (valid) {
       loading.value = true;
       try {
-        const success = await store.updatePassword(passwordForm.newPassword);
+        const success = await store.updatePassword(
+          passwordForm.oldPassword,
+          passwordForm.newPassword,
+        );
         if (success) {
           showPasswordDialog.value = false;
         }
