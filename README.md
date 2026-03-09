@@ -1,4 +1,5 @@
-# backstage
+# hospital-backstage
+息肉辅助诊断后台管理
 
 This template should help get you started developing with Vue 3 in Vite.
 
@@ -40,3 +41,4 @@ npm run dev
 ```sh
 npm run build
 ```
+
