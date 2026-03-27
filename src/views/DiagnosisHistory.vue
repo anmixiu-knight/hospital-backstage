@@ -587,7 +587,7 @@ const queryParams = reactive({
   comment: "",
 });
 
-const handleSearch = async () => {
+const handleSearch = async (showEmptyMessage = true) => {
   loading.value = true;
   try {
     const res: any = await instance.get("/backstage/get", {
@@ -596,7 +596,7 @@ const handleSearch = async () => {
     console.log(res);
     tableData.value = res.forms || [];
     total.value = res.total || 0;
-    if (tableData.value.length === 0) {
+    if (showEmptyMessage && tableData.value.length === 0) {
       ElMessage.info("未查询到相关数据");
     }
   } catch (err: any) {
@@ -700,7 +700,7 @@ const handleDelete = async (row: any) => {
     await instance.delete(`/doctor/delete/${row.formId}`);
     ElMessage.success("删除成功");
     // 重新获取数据
-    handleSearch();
+    handleSearch(false);
   } catch (error: any) {
     console.error("删除失败:", error);
     ElMessage.error(error?.response?.data?.message || "删除失败，请重试");
