@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div class="admin-container">
     <el-card>
       <template #header>
@@ -19,7 +19,7 @@
         <el-table-column label="修改权限" width="220">
           <template #default="scope">
             <el-popconfirm
-              v-if="!scope.row.isUpgradeMode"
+              v-if="!isCurrentUser(scope.row) && !scope.row.isUpgradeMode"
               title="确定删除该医生吗?"
               @confirm="handleDeleteDoctor(scope.row.id)"
             >
@@ -30,7 +30,7 @@
               </template>
             </el-popconfirm>
             <el-popconfirm
-              v-else
+              v-else-if="!isCurrentUser(scope.row)"
               title="确定将该医生设为管理员吗?"
               @confirm="handleUpgradeDoctor(scope.row.id)"
             >
@@ -41,6 +41,7 @@
               </template>
             </el-popconfirm>
             <el-button
+              v-if="!isCurrentUser(scope.row)"
               link
               size="small"
               :icon="Refresh"
@@ -150,19 +151,18 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, reactive } from "vue";
+import { ref, onMounted, reactive, computed } from "vue";
 import { useRouter } from "vue-router";
 import instance from "@/composable/api/interface";
 import { useUserStore } from "@/stores/userStore";
-import { ElMessage, ElMessageBox } from "element-plus";
+import { ElMessage } from "element-plus";
 import {
   Delete,
   User,
   Refresh,
-  Sort,
   CopyDocument,
 } from "@element-plus/icons-vue";
-import { useClipboard } from "@vueuse/core"; // If vueuse is available, otherwise use navigator
+
 
 const doctorList = ref([]);
 const loading = ref(false);
@@ -174,6 +174,7 @@ const showResetSuccessDialog = ref(false);
 const resetNewPassword = ref("");
 const router = useRouter();
 const userStore = useUserStore();
+const currentUsername = computed(() => (userStore.username || "").trim());
 
 const registerForm = reactive({
   username: "",
@@ -285,12 +286,19 @@ const toggleMode = (row: any) => {
   row.isUpgradeMode = !row.isUpgradeMode;
 };
 
+const isCurrentUser = (row: any) => {
+  return (row?.username || "").trim() === currentUsername.value;
+};
+
 const handleLogout = () => {
   router.push("/login");
   userStore.logout();
 };
 
-onMounted(() => {
+onMounted(async () => {
+  if (!currentUsername.value) {
+    await userStore.fetchCurrentUser();
+  }
   fetchDoctors();
 });
 </script>
@@ -314,3 +322,4 @@ onMounted(() => {
   justify-content: flex-end;
 }
 </style>
+
