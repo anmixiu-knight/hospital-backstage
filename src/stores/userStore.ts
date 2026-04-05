@@ -10,6 +10,16 @@ export const useUserStore = defineStore("user", () => {
   const reset = ref<number>(0);
   const lastError = ref<string | null>(null);
 
+  const extractErrorDetail = (error: any, fallback = "请求失败") => {
+    const raw =
+      error?.response?.data?.message ||
+      error?.message ||
+      (typeof error === "string" ? error : "");
+    const text = String(raw || fallback).trim();
+    const idx = Math.max(text.lastIndexOf(":"), text.lastIndexOf("："));
+    return idx >= 0 ? text.slice(idx + 1).trim() || fallback : text;
+  };
+
   const handleLogin = async (usernameInput: string, passwordInput: string) => {
     lastError.value = null;
     try {
@@ -17,22 +27,19 @@ export const useUserStore = defineStore("user", () => {
         username: usernameInput,
         password: passwordInput,
       });
-      // console.log(res);
+
       ElMessage.success("登录成功");
       isLoggedIn.value = true;
-      username.value = usernameInput; // 更新用户名
-
-      // 后端一定会返回 Level 或 level，且值为 1 (医生) 或 2 (管理员)
+      username.value = usernameInput;
       level.value = res.Level ?? res.level;
       reset.value = res.reset ?? 0;
     } catch (err: any) {
       isLoggedIn.value = false;
       level.value = 0;
       username.value = "";
-      lastError.value =
-        typeof err === "string" ? err : err.message || "登录失败，请稍后重试";
-      ElMessage.error(lastError.value || "登录失败");
-      throw err; // 抛出错误以便组件处理
+      lastError.value = extractErrorDetail(err, "登录失败");
+      ElMessage.error(lastError.value);
+      throw err;
     }
   };
 
@@ -43,9 +50,8 @@ export const useUserStore = defineStore("user", () => {
       ElMessage.success("密码修改成功");
       return true;
     } catch (error: any) {
-      lastError.value =
-        typeof error === "string" ? error : error.message || "密码修改失败";
-      ElMessage.error(lastError.value || "密码修改失败");
+      lastError.value = extractErrorDetail(error, "密码修改失败");
+      ElMessage.error(lastError.value);
       return false;
     }
   };
@@ -56,14 +62,12 @@ export const useUserStore = defineStore("user", () => {
       const res: any = await instance.get("/user/status");
       username.value = res.username || "";
       isLoggedIn.value = true;
-      // 恢复用户等级，防止刷新页面后权限丢失
       level.value = res.Level ?? res.level;
     } catch (error: any) {
       isLoggedIn.value = false;
       username.value = "";
       level.value = 0;
-      lastError.value =
-        typeof error === "string" ? error : error.message || "获取用户信息失败";
+      lastError.value = extractErrorDetail(error, "获取用户信息失败");
     }
   };
 
@@ -73,11 +77,9 @@ export const useUserStore = defineStore("user", () => {
       await instance.delete("/user/logout");
       ElMessage.success("登出成功");
     } catch (error: any) {
-      lastError.value =
-        typeof error === "string" ? error : error.message || "登出失败";
-      ElMessage.error(lastError.value || "登出失败");
+      lastError.value = extractErrorDetail(error, "登出失败");
+      ElMessage.error(lastError.value);
     } finally {
-      // 无论后端是否成功，前端都清理状态
       isLoggedIn.value = false;
       username.value = "";
       level.value = 0;

@@ -211,8 +211,8 @@ const handleChangePassword = async () => {
     ElMessage.warning("请输入新密码");
     return;
   }
-  if (passwordForm.newPassword === passwordForm.oldPassword) {
-    ElMessage.warning("新密码不能与旧密码相同");
+  if (passwordForm.newPassword.length < 3 || passwordForm.newPassword.length > 12) {
+    ElMessage.warning("新密码长度必须是3到12位");
     return;
   }
   if (passwordForm.newPassword !== passwordForm.confirmPassword) {

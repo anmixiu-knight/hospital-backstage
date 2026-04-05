@@ -1,64 +1,55 @@
-﻿<template>
+<template>
   <div class="admin-container">
     <el-card>
       <template #header>
         <div class="card-header">
-          <span>医生信息管理</span>
+          <span>医生列表</span>
           <div class="button-group">
-            <el-button type="primary" @click="showRegisterDialog = true"
-              >注册新医生</el-button
-            >
+            <el-button type="primary" @click="showRegisterDialog = true">
+              注册医生
+            </el-button>
           </div>
         </div>
       </template>
 
       <el-table :data="doctorList" style="width: 100%" v-loading="loading">
         <el-table-column prop="id" label="ID" width="100" />
-        <el-table-column prop="username" label="医生用户名" />
-        <el-table-column prop="phone" label="电话号码" />
+        <el-table-column prop="username" label="医生姓名" />
+        <el-table-column prop="phone" label="手机号" />
+
         <el-table-column label="修改权限" width="220">
           <template #default="scope">
             <el-popconfirm
-              v-if="!isCurrentUser(scope.row) && !scope.row.isUpgradeMode"
-              title="确定删除该医生吗?"
-              @confirm="handleDeleteDoctor(scope.row.id)"
+              v-if="!isCurrentUser(scope.row) && !isLevelMinusDoctor(scope.row)"
+              title="你确定要禁用该医生的账号吗?"
+              @confirm="handleDeleteDoctor(scope.row)"
             >
               <template #reference>
-                <el-button size="small" type="danger" :icon="Delete"
-                  >删除</el-button
-                >
+                <el-button size="small" type="danger" :icon="Delete">禁用</el-button>
               </template>
             </el-popconfirm>
-            <el-popconfirm
-              v-else-if="!isCurrentUser(scope.row)"
-              title="确定将该医生设为管理员吗?"
-              @confirm="handleUpgradeDoctor(scope.row.id)"
-            >
-              <template #reference>
-                <el-button size="small" type="success" :icon="User"
-                  >设为管理员</el-button
-                >
-              </template>
-            </el-popconfirm>
+
             <el-button
-              v-if="!isCurrentUser(scope.row)"
-              link
+              v-else-if="!isCurrentUser(scope.row) && isLevelMinusDoctor(scope.row)"
               size="small"
-              :icon="Refresh"
-              @click="toggleMode(scope.row)"
-              style="margin-left: 8px"
-              title="切换模式"
-            />
+              type="danger"
+              :icon="Delete"
+              disabled
+            >
+              禁用
+            </el-button>
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="150">
+
+        <el-table-column label="重置密码" width="150">
           <template #default="scope">
             <el-popconfirm
-              title="确定重置该医生的密码吗?"
-              @confirm="handleResetPassword(scope.row.id)"
+              v-if="!isLevelMinusDoctor(scope.row)"
+              title="你确定要重置该医生的密码吗？"
+              @confirm="handleResetPassword(scope.row)"
             >
               <template #reference>
-                <el-button size="small" type="warning">重置密码</el-button>
+                <el-button size="small" type="warning">重置</el-button>
               </template>
             </el-popconfirm>
           </template>
@@ -76,14 +67,10 @@
       </div>
     </el-card>
 
-    <!-- Register Dialog -->
-    <el-dialog v-model="showRegisterDialog" title="注册新医生" width="400px">
-      <el-form :model="registerForm" label-width="80px">
-        <el-form-item label="用户名">
-          <el-input
-            v-model="registerForm.username"
-            placeholder="请输入用户名"
-          />
+    <el-dialog v-model="showRegisterDialog" title="注册医生" width="400px">
+      <el-form :model="registerForm" label-width="90px">
+        <el-form-item label="医生姓名">
+          <el-input v-model="registerForm.username" placeholder="请输入医生姓名" />
         </el-form-item>
         <el-form-item label="密码">
           <el-input
@@ -93,27 +80,26 @@
             placeholder="请输入密码"
           />
         </el-form-item>
-        <el-form-item label="电话">
-          <el-input v-model="registerForm.phone" placeholder="请输入电话号码" />
+        <el-form-item label="手机号">
+          <el-input v-model="registerForm.phone" placeholder="请输入手机号" />
         </el-form-item>
       </el-form>
       <template #footer>
         <span class="dialog-footer">
           <el-button @click="showRegisterDialog = false">取消</el-button>
-          <el-button type="primary" @click="handleRegister">确定</el-button>
+          <el-button type="primary" @click="handleRegister">确认</el-button>
         </span>
       </template>
     </el-dialog>
 
-    <!-- Reset Password Success Dialog -->
     <el-dialog
       v-model="showResetSuccessDialog"
-      title="重置密码成功"
+      title="Password Reset Success"
       width="400px"
       center
     >
       <div style="text-align: center; font-size: 16px">
-        <p>新密码为：</p>
+        <p>新密码:</p>
         <div
           style="
             display: flex;
@@ -126,24 +112,16 @@
             border-radius: 4px;
           "
         >
-          <strong
-            style="color: #f56c6c; font-size: 20px; font-family: monospace"
-            >{{ resetNewPassword }}</strong
-          >
-          <el-button
-            type="primary"
-            link
-            :icon="CopyDocument"
-            @click="copyPassword"
-          />
+          <strong style="color: #f56c6c; font-size: 20px; font-family: monospace">
+            {{ resetNewPassword }}
+          </strong>
+          <el-button type="primary" link :icon="CopyDocument" @click="copyPassword" />
         </div>
-        <p style="color: #909399; font-size: 14px">请妥善保管并告知医生。</p>
+        <p style="color: #909399; font-size: 14px">请妥善保管。</p>
       </div>
       <template #footer>
         <span class="dialog-footer">
-          <el-button type="primary" @click="showResetSuccessDialog = false"
-            >确定</el-button
-          >
+          <el-button type="primary" @click="showResetSuccessDialog = false">确认</el-button>
         </span>
       </template>
     </el-dialog>
@@ -152,19 +130,12 @@
 
 <script setup lang="ts">
 import { ref, onMounted, reactive, computed } from "vue";
-import { useRouter } from "vue-router";
 import instance from "@/composable/api/interface";
 import { useUserStore } from "@/stores/userStore";
 import { ElMessage } from "element-plus";
-import {
-  Delete,
-  User,
-  Refresh,
-  CopyDocument,
-} from "@element-plus/icons-vue";
+import { Delete, CopyDocument } from "@element-plus/icons-vue";
 
-
-const doctorList = ref([]);
+const doctorList = ref<any[]>([]);
 const loading = ref(false);
 const total = ref(0);
 const page = ref(1);
@@ -172,7 +143,6 @@ const limit = ref(10);
 const showRegisterDialog = ref(false);
 const showResetSuccessDialog = ref(false);
 const resetNewPassword = ref("");
-const router = useRouter();
 const userStore = useUserStore();
 const currentUsername = computed(() => (userStore.username || "").trim());
 
@@ -191,20 +161,16 @@ const fetchDoctors = async () => {
         limit: limit.value,
       },
     });
-    console.log(res);
-    // Adapt to response structure
+
     if (res && res.doctors) {
-      doctorList.value = res.doctors.map((d: any) => ({
-        ...d,
-        isUpgradeMode: false, // Start in Delete mode
-      }));
+      doctorList.value = res.doctors;
       total.value = res.total || res.doctors.length;
     } else {
       doctorList.value = [];
       total.value = 0;
     }
   } catch (error) {
-    ElMessage.error("获取医生列表失败");
+    ElMessage.error("未查询到医生数据");
     console.error(error);
   } finally {
     loading.value = false;
@@ -218,9 +184,10 @@ const handlePageChange = (val: number) => {
 
 const handleRegister = async () => {
   if (!registerForm.username || !registerForm.password || !registerForm.phone) {
-    ElMessage.warning("请填写完整信息");
+    ElMessage.warning("请填写所有字段");
     return;
   }
+
   try {
     await instance.post("/admin/doctor/register", registerForm);
     ElMessage.success("注册成功");
@@ -230,24 +197,18 @@ const handleRegister = async () => {
     registerForm.phone = "";
     fetchDoctors();
   } catch (error: any) {
-    ElMessage.error(error.message || "注册失败");
+    ElMessage.error(error.message || "Register failed");
   }
 };
 
-const handleResetPassword = async (id: string) => {
+const handleResetPassword = async (row: any) => {
+  if (isLevelMinusDoctor(row)) return;
+
   try {
-    const res: any = await instance.put(`/admin/doctor/reset/${id}`);
-    // 尝试提取密码，兼容直接返回字符串或对象包含 password 字段的情况
-    let newPassword = "";
-    if (res && res.newPassword) {
-      newPassword = res.newPassword;
-      resetNewPassword.value = newPassword;
-      showResetSuccessDialog.value = true;
-    } else {
-      newPassword = JSON.stringify(res);
-      resetNewPassword.value = newPassword;
-      showResetSuccessDialog.value = true;
-    }
+    const res: any = await instance.put(`/admin/doctor/reset/${row.id}`);
+    const newPassword = res?.newPassword ? res.newPassword : JSON.stringify(res);
+    resetNewPassword.value = newPassword;
+    showResetSuccessDialog.value = true;
   } catch (error: any) {
     ElMessage.error(error.message || "重置密码失败");
   }
@@ -256,43 +217,31 @@ const handleResetPassword = async (id: string) => {
 const copyPassword = async () => {
   try {
     await navigator.clipboard.writeText(resetNewPassword.value);
-    ElMessage.success("密码已复制到剪贴板");
-  } catch (err) {
+    ElMessage.success("已复制到剪贴板");
+  } catch {
     ElMessage.error("复制失败，请手动复制");
   }
 };
 
-const handleDeleteDoctor = async (id: string) => {
+const handleDeleteDoctor = async (row: any) => {
+  if (isLevelMinusDoctor(row)) return;
+
   try {
-    await instance.delete(`/admin/doctor/delete/${id}`);
-    ElMessage.success("删除成功");
+    await instance.delete(`/admin/doctor/delete/${row.id}`);
+    ElMessage.success("禁用成功");
     fetchDoctors();
   } catch (error: any) {
-    ElMessage.error(error.message || "删除失败");
+    ElMessage.error(error.message || "禁用失败");
   }
-};
-
-const handleUpgradeDoctor = async (id: string) => {
-  try {
-    await instance.put(`/admin/doctor/upgrade/${id}`);
-    ElMessage.success("设置管理员成功");
-    fetchDoctors();
-  } catch (error: any) {
-    ElMessage.error(error.message || "设置失败");
-  }
-};
-
-const toggleMode = (row: any) => {
-  row.isUpgradeMode = !row.isUpgradeMode;
 };
 
 const isCurrentUser = (row: any) => {
   return (row?.username || "").trim() === currentUsername.value;
 };
 
-const handleLogout = () => {
-  router.push("/login");
-  userStore.logout();
+const isLevelMinusDoctor = (row: any) => {
+  const level = row?.level ?? row?.Level;
+  return Number(level) === -1;
 };
 
 onMounted(async () => {
@@ -305,21 +254,23 @@ onMounted(async () => {
 
 <style scoped>
 .admin-container {
-  /* padding: 20px; */ /* Padding is handled by MainLayout */
+  /* padding: 20px; */
 }
+
 .card-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
 }
+
 .button-group {
   display: flex;
   gap: 10px;
 }
+
 .pagination-container {
   margin-top: 15px;
   display: flex;
   justify-content: flex-end;
 }
 </style>
-

@@ -35,7 +35,7 @@
             <el-dropdown @command="handleCommand">
               <span class="el-dropdown-link">
                 <el-avatar :size="32" class="user-avatar" icon="UserFilled" />
-                <span class="username">{{ store.username || "管理员" }}</span>
+                <span class="username">{{ store.username }}</span>
                 <el-icon class="el-icon--right"><arrow-down /></el-icon>
               </span>
               <template #dropdown>

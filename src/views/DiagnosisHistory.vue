@@ -287,6 +287,7 @@
                 {{ getMalignantInfo(scope.row.is_worse).label }}
               </el-tag>
               <el-button
+                v-if="canEditRow(scope.row)"
                 type="primary"
                 link
                 icon="Edit"
@@ -306,6 +307,7 @@
             <div class="comment-cell">
               <span class="comment-text">{{ scope.row.comment || "无" }}</span>
               <el-button
+                v-if="canEditRow(scope.row)"
                 type="primary"
                 link
                 icon="Edit"
@@ -329,7 +331,7 @@
               cancel-button-text="取消"
             >
               <template #reference>
-                <el-button type="danger" size="small">删除</el-button>
+                <el-button type="danger" size="small" :disabled="!canEditRow(scope.row)">删除</el-button>
               </template>
             </el-popconfirm>
           </template>
@@ -541,9 +543,10 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted } from "vue";
+import { ref, reactive, onMounted, computed } from "vue";
 import instance from "@/composable/api/interface";
 import { ElMessage, ElMessageBox } from "element-plus";
+import { useUserStore } from "@/stores/userStore";
 import {
   Download,
   Plus,
@@ -561,6 +564,8 @@ const loading = ref(false);
 const tableData = ref([]);
 const total = ref(0);
 const isAdvanced = ref(false);
+const userStore = useUserStore();
+const currentUsername = computed(() => (userStore.username || "").trim());
 
 // Malignant Edit State
 const editMalignantDialogVisible = ref(false);
@@ -593,7 +598,6 @@ const handleSearch = async (showEmptyMessage = true) => {
     const res: any = await instance.get("/backstage/get", {
       params: queryParams,
     });
-    console.log(res);
     tableData.value = res.forms || [];
     total.value = res.total || 0;
     if (showEmptyMessage && tableData.value.length === 0) {
@@ -689,6 +693,10 @@ const openCommentDialog = async (row: any) => {
     console.error("更新备注失败:", error);
     ElMessage.error(error?.response?.data?.message || "更新失败，请重试");
   }
+};
+
+const canEditRow = (row: any) => {
+  return (row?.doctorName || "").trim() === currentUsername.value;
 };
 
 const handleDelete = async (row: any) => {
@@ -1005,7 +1013,10 @@ const handleSubmit = async () => {
   }
 };
 
-onMounted(() => {
+onMounted(async () => {
+  if (!currentUsername.value) {
+    await userStore.fetchCurrentUser();
+  }
   handleSearch();
 });
 </script>
