@@ -696,6 +696,10 @@ const openCommentDialog = async (row: any) => {
 };
 
 const canEditRow = (row: any) => {
+  if (userStore.level === 2) {
+    return true;
+  }
+
   return (row?.doctorName || "").trim() === currentUsername.value;
 };
 

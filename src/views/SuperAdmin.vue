@@ -94,7 +94,7 @@
 
     <el-dialog
       v-model="showResetSuccessDialog"
-      title="Password Reset Success"
+      title="密码重置成功"
       width="400px"
       center
     >
