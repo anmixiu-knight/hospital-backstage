@@ -3,10 +3,10 @@
     <el-card>
       <template #header>
         <div class="card-header">
-          <span>医生列表</span>
+          <span>账号列表</span>
           <div class="button-group">
             <el-button type="primary" @click="showRegisterDialog = true">
-              注册医生
+              注册账号
             </el-button>
           </div>
         </div>
@@ -14,14 +14,14 @@
 
       <el-table :data="doctorList" style="width: 100%" v-loading="loading">
         <el-table-column prop="id" label="ID" width="100" />
-        <el-table-column prop="username" label="医生姓名" />
+        <el-table-column prop="username" label="账号名称" />
         <el-table-column prop="phone" label="手机号" />
 
         <el-table-column label="修改权限" width="220">
           <template #default="scope">
             <el-popconfirm
               v-if="!isCurrentUser(scope.row) && !isLevelMinusDoctor(scope.row)"
-              title="你确定要禁用该医生的账号吗?"
+              title="你确定要禁用该账号吗?"
               @confirm="handleDeleteDoctor(scope.row)"
             >
               <template #reference>
@@ -45,7 +45,7 @@
           <template #default="scope">
             <el-popconfirm
               v-if="!isLevelMinusDoctor(scope.row)"
-              title="你确定要重置该医生的密码吗？"
+              title="你确定要重置该账号的密码吗？"
               @confirm="handleResetPassword(scope.row)"
             >
               <template #reference>
@@ -67,10 +67,10 @@
       </div>
     </el-card>
 
-    <el-dialog v-model="showRegisterDialog" title="注册医生" width="400px">
+    <el-dialog v-model="showRegisterDialog" title="注册账号" width="400px">
       <el-form :model="registerForm" label-width="90px">
-        <el-form-item label="医生姓名">
-          <el-input v-model="registerForm.username" placeholder="请输入医生姓名" />
+        <el-form-item label="账号名称">
+          <el-input v-model="registerForm.username" placeholder="请输入账号名称" />
         </el-form-item>
         <el-form-item label="密码">
           <el-input
@@ -170,7 +170,7 @@ const fetchDoctors = async () => {
       total.value = 0;
     }
   } catch (error) {
-    ElMessage.error("未查询到医生数据");
+    ElMessage.error("未查询到账号数据");
     console.error(error);
   } finally {
     loading.value = false;
@@ -274,3 +274,4 @@ onMounted(async () => {
   justify-content: flex-end;
 }
 </style>
+

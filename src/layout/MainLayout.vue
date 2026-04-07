@@ -3,7 +3,7 @@
     <el-aside width="220px" class="aside">
       <div class="logo">
         <el-icon class="logo-icon" :size="24"><FirstAidKit /></el-icon>
-        <span>智慧医疗系统</span>
+        <span>智慧信息系统</span>
       </div>
       <el-menu
         active-text-color="#26a69a"
@@ -15,11 +15,11 @@
       >
         <el-menu-item index="/diagnosis">
           <el-icon><Monitor /></el-icon>
-          <span>患者记录</span>
+          <span>记录列表</span>
         </el-menu-item>
         <el-menu-item index="/super-admin" v-if="store.level === 2">
           <el-icon><UserFilled /></el-icon>
-          <span>医生信息管理</span>
+          <span>账号信息管理</span>
         </el-menu-item>
       </el-menu>
     </el-aside>
@@ -59,6 +59,9 @@
           </keep-alive>
         </router-view>
       </el-main>
+      <el-footer class="filing-host">
+        <FilingFooter />
+      </el-footer>
     </el-container>
 
     <!-- Password Change Dialog -->
@@ -121,6 +124,7 @@ import {
   ArrowDown,
 } from "@element-plus/icons-vue";
 import { ElMessage, type FormInstance, type FormRules } from "element-plus";
+import FilingFooter from "@/components/FilingFooter.vue";
 
 const route = useRoute();
 const router = useRouter();
@@ -161,9 +165,9 @@ const passwordRules = reactive<FormRules>({
 const currentRouteName = computed(() => {
   switch (route.path) {
     case "/diagnosis":
-      return "患者记录";
+      return "记录列表";
     case "/super-admin":
-      return "医生信息管理";
+      return "账号信息管理";
     default:
       return "仪表盘";
   }
@@ -316,5 +320,14 @@ const submitPasswordChange = async () => {
   overflow: hidden; /* 防止溢出, 让内部组件决定滚动 */
   display: flex;
   flex-direction: column;
+  min-height: 0;
+}
+
+.filing-host {
+  height: auto;
+  padding: 10px 24px 12px;
+  border-top: 1px solid #e9edf2;
+  background-color: #f5f7fa;
 }
 </style>
+

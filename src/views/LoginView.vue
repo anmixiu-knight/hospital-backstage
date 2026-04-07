@@ -6,9 +6,9 @@
           <div class="logo-circle">
             <el-icon :size="40" color="#fff"><FirstAidKit /></el-icon>
           </div>
-          <h1 class="welcome-title">智慧医疗</h1>
+          <h1 class="welcome-title">智慧信息平台</h1>
           <p class="welcome-desc">高效 · 智能 · 关怀</p>
-          <p class="welcome-sub">Integrated Hospital Management System</p>
+          <p class="welcome-sub">Integrated Information Management Platform</p>
 
           <!-- 装饰性波浪 -->
           <svg
@@ -148,6 +148,10 @@
         </div>
       </template>
     </el-dialog>
+
+    <div class="login-filing-host">
+      <FilingFooter />
+    </div>
   </div>
 </template>
 
@@ -157,6 +161,7 @@ import { useRouter } from "vue-router";
 import { ElMessage } from "element-plus";
 import { User, Lock, FirstAidKit, Warning } from "@element-plus/icons-vue";
 import { useUserStore } from "@/stores/userStore";
+import FilingFooter from "@/components/FilingFooter.vue";
 
 const router = useRouter();
 const userStore = useUserStore();
@@ -250,6 +255,7 @@ const handleChangePassword = async () => {
   align-items: center;
   background: linear-gradient(120deg, #e0f7fa 0%, #e8f5e9 100%);
   overflow: hidden;
+  position: relative;
 }
 
 .login-wrapper {
@@ -407,8 +413,22 @@ const handleChangePassword = async () => {
   font-size: 12px;
 }
 
-/* 覆盖 Element Plus 默认聚焦颜色为医疗绿 */
+/* 覆盖 Element Plus 默认聚焦颜色为品牌绿 */
 :deep(.el-input__wrapper.is-focus) {
   box-shadow: 0 0 0 1px #26a69a inset !important;
 }
+
+.login-filing-host {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  padding: 8px 12px;
+  background: rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(3px);
+  border-top: 1px solid rgba(0, 0, 0, 0.06);
+  z-index: 20;
+}
 </style>
+
+

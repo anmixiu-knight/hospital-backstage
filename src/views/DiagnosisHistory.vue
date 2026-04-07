@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div class="diagnosis-history">
     <el-card class="query-card" shadow="never">
       <div class="search-header">
@@ -26,20 +26,20 @@
       <el-form :model="queryParams" label-width="90px" class="search-form">
         <el-row :gutter="24">
           <el-col :span="6" :xs="24" :sm="12" :md="8" :lg="6">
-            <el-form-item label="病历单号">
+            <el-form-item label="记录编号">
               <el-input
                 v-model="queryParams.clinicNumber"
-                placeholder="请输入病历号"
+                placeholder="请输入记录号"
                 clearable
                 @keyup.enter="handleSearch"
               />
             </el-form-item>
           </el-col>
           <el-col :span="6" :xs="24" :sm="12" :md="8" :lg="6">
-            <el-form-item label="医生姓名">
+            <el-form-item label="账号名称">
               <el-input
                 v-model="queryParams.doctorName"
-                placeholder="请输入医生姓名"
+                placeholder="请输入账号名称"
                 clearable
                 @keyup.enter="handleSearch"
               />
@@ -235,7 +235,7 @@
           <span class="card-title">查询结果</span>
           <div class="header-operations">
             <el-button type="primary" plain @click="dialogVisible = true">
-              <el-icon><Plus /></el-icon> 添加患者
+              <el-icon><Plus /></el-icon> 添加记录
             </el-button>
             <el-button
               type="success"
@@ -256,8 +256,8 @@
         v-loading="loading"
         stripe
       >
-        <el-table-column prop="clinicNumber" label="病历单号" width="130" />
-        <el-table-column prop="doctorName" label="医生姓名" width="100" />
+        <el-table-column prop="clinicNumber" label="记录编号" width="130" />
+        <el-table-column prop="doctorName" label="账号名称" width="100" />
         <el-table-column prop="age" label="年龄" width="80" />
         <el-table-column prop="polypsNumber" label="息肉数" width="90" />
         <el-table-column label="直径 (长/短)" width="140">
@@ -273,7 +273,7 @@
         <el-table-column label="风险等级" width="120">
           <template #default="scope">
             <el-tag :type="getRiskType(scope.row.risk_level)">{{
-              scope.row.risk_level
+              getRiskLevelLabel(scope.row.risk_level)
             }}</el-tag>
           </template>
         </el-table-column>
@@ -297,7 +297,7 @@
             </div>
           </template>
         </el-table-column>
-        <el-table-column label="AI医嘱" show-overflow-tooltip>
+        <el-table-column label="AI建议" show-overflow-tooltip>
           <template #default="scope">
             {{ getAdviceLabel(scope.row.advice) }}
           </template>
@@ -317,7 +317,7 @@
             </div>
           </template>
         </el-table-column>
-        <el-table-column label="诊断时间" width="110">
+        <el-table-column label="提交时间" width="110">
           <template #default="scope">
             {{ formatDate(scope.row.formTime) }}
           </template>
@@ -375,7 +375,7 @@
     </el-dialog>
     <el-dialog
       v-model="dialogVisible"
-      title="添加患者信息"
+      title="添加记录信息"
       width="600px"
       :before-close="handleClose"
       class="custom-dialog"
@@ -392,15 +392,15 @@
         class="patient-form"
       >
         <el-row :gutter="24">
-          <!-- 病历单号 -->
+          <!-- 记录编号 -->
           <el-col :span="12">
             <el-form-item
-              label="病历单号 (Medical Record No.)"
+              label="记录编号 (Record No.)"
               prop="clinicNum"
             >
               <el-input
                 v-model="patientForm.clinicNum"
-                placeholder="请输入病历单号"
+                placeholder="请输入记录编号"
                 clearable
               >
                 <template #prefix>
@@ -735,6 +735,15 @@ const getRiskType = (riskLevel: string) => {
   return typeMap[riskLevel];
 };
 
+const getRiskLevelLabel = (riskLevel: string) => { 
+  const labelMap: Record<string, string> = {
+    "Low Risk": "低风险",
+    "Moderate Risk": "中风险",
+    "High Risk": "高风险",
+    "Very High Risk": "极高风险",
+  };
+  return labelMap[riskLevel];
+};
 const getMalignantInfo = (status: string | undefined) => {
   if (status === "-1") return { label: "恶性", type: "danger" };
   if (status === "1") return { label: "良性", type: "success" };
@@ -754,13 +763,13 @@ const getAdviceLabel = (advice: string | undefined) => {
   // normalize whitespace and newlines to match stored templates
   const normalized = advice.replace(/\s+/g, " ").trim();
   const map: Record<string, string> = {
-    "Follow-up is not required": "无需随访",
+    "Follow-up is not required": "无需回访",
     "Follow-up ultrasound is recommended at 6 months, 1 year, and 2 years; Follow-up should be discontinued after 2 years in the absence of growth.":
-      "建议于6个月、1年及2年进行超声随访；若2年内病灶无增大，应停止随访。",
+      "建议于6个月、1年及2年进行超声回访；若2年内病灶无增大，应停止回访。",
     "Cholecystectomy is recommended if the patient is fit for, and accepts, surgery;\n MDT discussion may be considered":
-      "若患者具备手术指征且可耐受手术，建议行胆囊切除术；可考虑进行多学科团队MDT讨论。",
+      "若用户具备操作指征且可耐受操作，建议行胆囊切除术；可考虑进行多学科团队MDT讨论。",
     "Cholecystectomy is strongly recommended if the patient is fit for, and accepts, surgery":
-    "若患者具备手术指征且可耐受手术，强烈建议行胆囊切除术。"
+    "若用户具备操作指征且可耐受操作，强烈建议行胆囊切除术。"
   };
 
   return map[normalized] || advice;
@@ -811,9 +820,9 @@ const handleExport = async () => {
     }
 
     const headers = [
-      "病历单号",
-      "医生姓名",
-      "医生ID",
+      "记录编号",
+      "账号名称",
+      "账号ID",
       "年龄",
       "息肉数量",
       "长径",
@@ -822,9 +831,9 @@ const handleExport = async () => {
       "风险概率",
       "风险等级",
       "是否恶性",
-      "AI医嘱",
+      "AI建议",
       "备注",
-      "诊断时间",
+      "提交时间",
     ];
 
     const rows = allData.map((d: any) => [
@@ -847,7 +856,7 @@ const handleExport = async () => {
     // 创建工作簿和工作表
     const ws = XLSX.utils.aoa_to_sheet([headers, ...rows]);
     const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "诊断数据");
+    XLSX.utils.book_append_sheet(wb, ws, "业务数据");
 
     // 导出Excel文件
     const fileName = `Diagnosis_Export_${new Date().toISOString().slice(0, 10)}.xlsx`;
@@ -921,7 +930,7 @@ const validateShortDiameter = (rule: any, value: any, callback: any) => {
 };
 
 const formRules = {
-  clinicNum: [{ required: true, message: "请输入病历单号", trigger: "blur" }],
+  clinicNum: [{ required: true, message: "请输入记录编号", trigger: "blur" }],
   age: [{ required: true, message: "请输入年龄", trigger: "blur" }],
   polypsNum: [{ required: true, message: "请输入息肉数量", trigger: "blur" }],
   longDiameter: [
@@ -965,20 +974,20 @@ const handleSubmit = async () => {
       return; // 直接返回，不继续执行
     }
     if (!patientForm.clinicNum?.trim()) {
-      ElMessage.warning("请输入病历单号");
+      ElMessage.warning("请输入记录编号");
       return;
     }
     try {
       const registerRes = await instance.post("doctor/patient/register", {
         clinicNumber: patientForm.clinicNum,
       });
-      console.log("患者注册响应:", registerRes);
+      console.log("记录注册响应:", registerRes);
     } catch (error: any) {
       console.error("注册请求网络错误:", error);
       ElMessage.error("网络请求失败，请稍后重试");
       return; // 终止整个提交
     }
-    console.log("提交的患者信息:", { ...patientForm });
+    console.log("提交的记录信息:", { ...patientForm });
     const res = (await instance.post("doctor/save", {
       clinicNumber: patientForm.clinicNum,
       age: patientForm.age,
@@ -990,7 +999,7 @@ const handleSubmit = async () => {
       riskLevel: "",
       advice: "",
     })) as any;
-    console.log("保存患者信息响应:", res);
+    console.log("保存记录信息响应:", res);
     const formID = res.formId;
     const params: DoctorRow = {
       formId: formID,
@@ -1001,7 +1010,7 @@ const handleSubmit = async () => {
     await instance.put("/doctor/update", null, {
       params: params,
     });
-    ElMessage.success("患者信息添加成功！");
+    ElMessage.success("记录信息添加成功！");
 
     // 关闭弹窗并重置表单
     dialogVisible.value = false;
@@ -1240,3 +1249,4 @@ onMounted(async () => {
   margin-right: 4px;
 }
 </style>
+
