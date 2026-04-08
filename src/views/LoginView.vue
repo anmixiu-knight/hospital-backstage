@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div class="login-container">
     <div class="login-wrapper">
       <div class="login-left">
@@ -47,49 +47,55 @@
           </svg>
         </div>
       </div>
-
       <div class="login-right">
         <div class="login-form-box">
           <div class="form-header">
             <h3>欢迎登录</h3>
             <p>请输入您的帐号和密码进入系统</p>
           </div>
-
-          <el-form :model="loginForm" label-width="0" size="large">
-            <el-form-item>
-              <el-input
-                v-model="loginForm.username"
-                placeholder="帐号 / Username"
-              >
-                <template #prefix>
-                  <el-icon><User /></el-icon>
-                </template>
-              </el-input>
-            </el-form-item>
-            <el-form-item>
-              <el-input
-                v-model="loginForm.password"
-                type="password"
-                placeholder="密码 / Password"
-                show-password
-                @keyup.enter="handleLogin"
-              >
-                <template #prefix>
-                  <el-icon><Lock /></el-icon>
-                </template>
-              </el-input>
-            </el-form-item>
-            <el-form-item>
-              <el-button
-                type="primary"
-                class="login-button"
-                @click="handleLogin"
-              >
-                立即登录
-              </el-button>
-            </el-form-item>
-          </el-form>
-
+          <form>
+            <el-form :model="loginForm" label-width="0" size="large">
+              <el-form-item>
+                <el-input
+                  v-model="loginForm.username"
+                  placeholder="帐号 / Username"
+                  autocomplete="username"
+                  name="username"
+                >
+                  <template #prefix>
+                    <el-icon><User /></el-icon>
+                  </template>
+                </el-input>
+              </el-form-item>
+              <el-form-item>
+                <el-input
+                  v-model="loginForm.password"
+                  type="password"
+                  placeholder="密码 / Password"
+                  show-password
+                  autocomplete="current-password"
+                  name="password"
+                  @keyup.enter="handleLogin"
+                >
+                  <template #prefix>
+                    <el-icon><Lock /></el-icon>
+                  </template>
+                </el-input>
+              </el-form-item>
+              <el-form-item class="remember-row">
+                <el-checkbox v-model="rememberAccount">记住账号</el-checkbox>
+              </el-form-item>
+              <el-form-item>
+                <el-button
+                  type="primary"
+                  class="login-button"
+                  @click="handleLogin"
+                >
+                  立即登录
+                </el-button>
+              </el-form-item>
+            </el-form>
+          </form>
           <div class="form-footer">
             <span>忘记密码？请联系系统管理员</span>
           </div>
@@ -121,6 +127,7 @@
             type="password"
             placeholder="请输入旧密码"
             show-password
+            autocomplete="current-password"
           />
         </el-form-item>
         <el-form-item label="新密码">
@@ -129,6 +136,7 @@
             type="password"
             placeholder="请输入新密码"
             show-password
+            autocomplete="new-password"
           />
         </el-form-item>
         <el-form-item label="确认密码">
@@ -137,6 +145,7 @@
             type="password"
             placeholder="请再次输入新密码"
             show-password
+            autocomplete="new-password"
           />
         </el-form-item>
       </el-form>
@@ -156,7 +165,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive } from "vue";
+import { ref, reactive, onMounted, watch } from "vue";
 import { useRouter } from "vue-router";
 import { ElMessage } from "element-plus";
 import { User, Lock, FirstAidKit, Warning } from "@element-plus/icons-vue";
@@ -171,6 +180,75 @@ const loginForm = ref({
   password: "",
 });
 
+const LOGIN_MEMORY_KEY = "backstage_login_memory_v2";
+
+type LoginMemory = {
+  remember: boolean;
+  lastUsername: string;
+};
+
+const rememberAccount = ref(false);
+
+const createDefaultLoginMemory = (): LoginMemory => ({
+  remember: false,
+  lastUsername: "",
+});
+
+const normalizeUsername = (username: string) => username.trim();
+
+const readLoginMemory = (): LoginMemory => {
+  try {
+    const raw = localStorage.getItem(LOGIN_MEMORY_KEY);
+    if (!raw) return createDefaultLoginMemory();
+
+    const parsed = JSON.parse(raw) as Partial<LoginMemory>;
+
+    return {
+      remember: parsed.remember === true,
+      lastUsername:
+        typeof parsed.lastUsername === "string" ? parsed.lastUsername : "",
+    };
+  } catch {
+    return createDefaultLoginMemory();
+  }
+};
+
+const writeLoginMemory = (memory: LoginMemory) => {
+  localStorage.setItem(LOGIN_MEMORY_KEY, JSON.stringify(memory));
+};
+
+const clearLegacyLoginMemory = () => {
+  // 清理旧版本中可能遗留的“明文密码存储”
+  localStorage.removeItem("backstage_login_memory_v1");
+};
+
+const saveRememberState = (username: string) => {
+  const normalizedUsername = normalizeUsername(username);
+
+  const memory: LoginMemory = {
+    remember: rememberAccount.value,
+    lastUsername:
+      rememberAccount.value && normalizedUsername ? normalizedUsername : "",
+  };
+
+  writeLoginMemory(memory);
+};
+
+const restoreRememberState = () => {
+  const memory = readLoginMemory();
+  rememberAccount.value = memory.remember;
+
+  if (memory.remember && memory.lastUsername) {
+    loginForm.value.username = memory.lastUsername;
+  }
+};
+
+const clearRememberedUsernameIfNeeded = () => {
+  if (!rememberAccount.value) {
+    writeLoginMemory(createDefaultLoginMemory());
+  }
+};
+
 const showChangePasswordDialog = ref(false);
 const passwordForm = reactive({
   oldPassword: "",
@@ -179,31 +257,35 @@ const passwordForm = reactive({
 });
 
 const handleLogin = async () => {
-  if (loginForm.value.username && loginForm.value.password) {
-    try {
-      await userStore.handleLogin(
-        loginForm.value.username,
-        loginForm.value.password,
-      );
-    } catch (error) {
+  const username = normalizeUsername(loginForm.value.username);
+  const password = loginForm.value.password;
+
+  if (!username || !password) {
+    ElMessage.warning("请输入用户名和密码");
+    return;
+  }
+
+  loginForm.value.username = username;
+
+  try {
+    await userStore.handleLogin(username, password);
+    saveRememberState(username);
+  } catch (error) {
+    return;
+  }
+
+  if (userStore.isLoggedIn) {
+    if (userStore.reset === 1) {
+      ElMessage.warning("为了您的账号安全，请修改初始密码");
+      showChangePasswordDialog.value = true;
       return;
     }
 
-    if (userStore.isLoggedIn) {
-      if (userStore.reset === 1) {
-        ElMessage.warning("为了您的账号安全，请修改初始密码");
-        showChangePasswordDialog.value = true;
-        return;
-      }
-
-      if (userStore.level === 2) {
-        router.push("/super-admin");
-      } else {
-        router.push("/");
-      }
+    if (userStore.level === 2) {
+      router.push("/super-admin");
+    } else {
+      router.push("/");
     }
-  } else {
-    ElMessage.warning("请输入用户名和密码");
   }
 };
 
@@ -216,7 +298,10 @@ const handleChangePassword = async () => {
     ElMessage.warning("请输入新密码");
     return;
   }
-  if (passwordForm.newPassword.length < 3 || passwordForm.newPassword.length > 12) {
+  if (
+    passwordForm.newPassword.length < 3 ||
+    passwordForm.newPassword.length > 12
+  ) {
     ElMessage.warning("新密码长度必须是3到12位");
     return;
   }
@@ -229,6 +314,7 @@ const handleChangePassword = async () => {
     passwordForm.oldPassword,
     passwordForm.newPassword,
   );
+
   if (success) {
     showChangePasswordDialog.value = false;
     ElMessage.success("密码修改成功，正在跳转...");
@@ -240,6 +326,15 @@ const handleChangePassword = async () => {
     }
   }
 };
+
+onMounted(() => {
+  clearLegacyLoginMemory();
+  restoreRememberState();
+});
+
+watch(rememberAccount, () => {
+  clearRememberedUsernameIfNeeded();
+});
 </script>
 
 <style scoped>
@@ -413,6 +508,11 @@ const handleChangePassword = async () => {
   font-size: 12px;
 }
 
+.remember-row {
+  margin-top: -4px;
+  margin-bottom: 2px;
+}
+
 /* 覆盖 Element Plus 默认聚焦颜色为品牌绿 */
 :deep(.el-input__wrapper.is-focus) {
   box-shadow: 0 0 0 1px #26a69a inset !important;
@@ -430,5 +530,3 @@ const handleChangePassword = async () => {
   z-index: 20;
 }
 </style>
-
-
