@@ -18,7 +18,7 @@ export const filingConfig: FilingConfig = {
   // TODO: Replace once PSB filing approval is complete
   psbNumber: "公网安备xxxxxxxxxxx号",
   psbRecordCode: "",
-  psbLink: "https://beian.gov.cn/",
+  psbLink: "https://beian.mps.gov.cn/",
 };
 
 export const filingPendingText = "备案信息审核中";

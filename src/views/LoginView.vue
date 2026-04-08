@@ -255,7 +255,36 @@ const passwordForm = reactive({
   newPassword: "",
   confirmPassword: "",
 });
+const saveCredential = async (username: string, password: string) => {
+  if (!("credentials" in navigator) || !("PasswordCredential" in window)) {
+    return;
+  }
+  const PasswordCredentialCtor = (
+    window as Window & {
+      PasswordCredential?: new (data: {
+        id: string;
+        password: string;
+        name?: string;
+        iconURL?: string;
+      }) => Credential;
+    }
+  ).PasswordCredential;
 
+  try {
+    const credential = new PasswordCredentialCtor!({
+      id: username,
+      password,
+      name: username,
+    });
+    if (!credential) {
+      return;
+    }
+
+    await navigator.credentials.store(credential);
+  } catch (error) {
+    console.warn("保存浏览器凭证失败：", error);
+  }
+};
 const handleLogin = async () => {
   const username = normalizeUsername(loginForm.value.username);
   const password = loginForm.value.password;
@@ -270,6 +299,7 @@ const handleLogin = async () => {
   try {
     await userStore.handleLogin(username, password);
     saveRememberState(username);
+    await saveCredential(username, password);
   } catch (error) {
     return;
   }
