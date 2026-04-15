@@ -14,10 +14,11 @@
       <a
         v-if="filingConfig.psbNumber"
         class="filing-link"
-        :href="psbUrl"
+        :href="filingConfig.psbLink"
         target="_blank"
         rel="noopener noreferrer"
       >
+        <img class="psb-icon" src="/lianwangbeian.png" alt="公安备案图标" />
         {{ filingConfig.psbNumber }}
       </a>
     </template>
@@ -37,12 +38,6 @@ const showSeparator = computed(
   () => Boolean(filingConfig.icpNumber) && Boolean(filingConfig.psbNumber),
 );
 
-const psbUrl = computed(() => {
-  if (filingConfig.psbRecordCode) {
-    return `https://beian.gov.cn/portal/registerSystemInfo?recordcode=${encodeURIComponent(filingConfig.psbRecordCode)}`;
-  }
-  return filingConfig.psbLink;
-});
 </script>
 
 <style scoped>
@@ -59,9 +54,18 @@ const psbUrl = computed(() => {
 }
 
 .filing-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
   color: #8c8c8c;
   text-decoration: none;
   transition: color 0.2s ease;
+}
+
+.psb-icon {
+  width: 14px;
+  height: 14px;
+  object-fit: contain;
 }
 
 .filing-link:hover {

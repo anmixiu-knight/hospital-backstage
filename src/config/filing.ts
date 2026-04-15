@@ -13,11 +13,10 @@ export interface FilingConfig {
 
 export const filingConfig: FilingConfig = {
   // TODO: Replace once ICP approval is complete
-  icpNumber: "icp备案xxxxxxxxx",
+  icpNumber: "ICP备案xxxxxxxxx",
   icpLink: "https://beian.miit.gov.cn/",
-  // TODO: Replace once PSB filing approval is complete
-  psbNumber: "公网安备xxxxxxxxxxx号",
-  psbRecordCode: "",
+  psbNumber: "陕公网安备61011302002379号",
+  psbRecordCode: "61011302002379",
   psbLink: "https://beian.mps.gov.cn/",
 };
 
